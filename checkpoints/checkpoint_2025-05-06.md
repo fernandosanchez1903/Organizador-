@@ -108,10 +108,18 @@ vida = Math.max(0, Math.round(100 - (diasTranscurridos / frecuenciaDias) * 100))
 
 ---
 
+## Sesión 2026-05-06
+
+- **Ordenar por urgencia**: `App.jsx` usa `[...tareas].sort((a, b) => calcularVida(a...) - calcularVida(b...))` antes del `.map()`. Spread para no mutar el estado. Las tarjetas con menos vida aparecen primero.
+- **Estado vacío**: cuando `tareas.length === 0`, `App.jsx` muestra un `<div>` centrado con emoji 📋, título y subtítulo con hint del botón `+` en violeta. La grilla solo se renderiza si hay tareas.
+- **Flash verde al completar**: `TarjetaTarea.jsx` tiene estado local `completando` (booleano). Al hacer clic en "✓ Hecho": `completando = true` → `bg-green-900` por 600ms → `setCompletando(false)` + `onCompletar()` batcheados en un solo render por React 18.
+- **Fix bug flash**: `completando` nunca se reseteaba a `false` tras llamar a `onCompletar()`, dejando la tarjeta verde con botón deshabilitado permanentemente. Corregido agregando `setCompletando(false)` dentro del callback del `setTimeout`.
+- **Fix sintaxis JSX**: comentario `{/* */}` antes del elemento raíz en el `return()` de `TarjetaTarea` causaba error de build. Reemplazado por comentario JS `//`, válido en esa posición.
+- **`.gitignore`**: carpeta `.claude/` agregada para no versionar datos internos de Claude Code.
+
+---
+
 ## Pendiente / ideas anotadas
 
-- Ordenar tarjetas por vida ascendente (las más urgentes primero)
-- Animación al marcar como hecha (flash verde)
-- Estado vacío cuando no hay tareas
 - Assets pixel art por tarea
 - Notificaciones cuando una tarea llega a 0%
