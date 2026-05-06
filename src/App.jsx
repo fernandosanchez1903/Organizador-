@@ -34,22 +34,31 @@ export default function App() {
         <p className="text-zinc-400 mt-1 text-sm">Tus tareas tienen vida. No las dejes morir.</p>
       </header>
 
-      <main className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-3xl mx-auto pb-24">
-        {/* Spread para no mutar el estado; sort ascendente por vida para que las más urgentes aparezcan primero */}
-        {[...tareas].sort((a, b) => calcularVida(a.ultimaVez, a.frecuenciaDias) - calcularVida(b.ultimaVez, b.frecuenciaDias)).map((tarea) => (
-          <TarjetaTarea
-            key={tarea.id}
-            nombre={tarea.nombre}
-            emoji={tarea.emoji}
-            vida={calcularVida(tarea.ultimaVez, tarea.frecuenciaDias)}
-            frecuenciaDias={tarea.frecuenciaDias}
-            ultimaVez={tarea.ultimaVez}
-            onCompletar={() => completarTarea(tarea.id)}
-            onEliminar={() => eliminarTarea(tarea.id)}
-            onEditar={() => setModalEstado(tarea)}
-          />
-        ))}
-      </main>
+      {/* Estado vacío: si no hay tareas, muestra un mensaje orientador en lugar de la grilla vacía */}
+      {tareas.length === 0 ? (
+        <div className="flex flex-col items-center justify-center gap-4 mt-24 text-center">
+          <span className="text-6xl">📋</span>
+          <p className="text-white font-semibold text-lg">No tienes tareas todavía</p>
+          <p className="text-zinc-400 text-sm">Agrega una con el botón <span className="text-violet-400 font-bold">+</span> de abajo.</p>
+        </div>
+      ) : (
+        <main className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-3xl mx-auto pb-24">
+          {/* Spread para no mutar el estado; sort ascendente por vida para que las más urgentes aparezcan primero */}
+          {[...tareas].sort((a, b) => calcularVida(a.ultimaVez, a.frecuenciaDias) - calcularVida(b.ultimaVez, b.frecuenciaDias)).map((tarea) => (
+            <TarjetaTarea
+              key={tarea.id}
+              nombre={tarea.nombre}
+              emoji={tarea.emoji}
+              vida={calcularVida(tarea.ultimaVez, tarea.frecuenciaDias)}
+              frecuenciaDias={tarea.frecuenciaDias}
+              ultimaVez={tarea.ultimaVez}
+              onCompletar={() => completarTarea(tarea.id)}
+              onEliminar={() => eliminarTarea(tarea.id)}
+              onEditar={() => setModalEstado(tarea)}
+            />
+          ))}
+        </main>
+      )}
 
       <button
         onClick={() => setModalEstado('crear')}
