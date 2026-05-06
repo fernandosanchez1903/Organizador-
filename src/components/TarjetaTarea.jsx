@@ -52,7 +52,7 @@ export default function TarjetaTarea({ nombre, emoji, vida, frecuenciaDias, ulti
   }
 
   return (
-    {/* bg-green-900 reemplaza bg-zinc-800 durante el flash; transition-colors anima el cambio */}
+    // bg-green-900 reemplaza bg-zinc-800 durante el flash; transition-colors anima el cambio
     <div className={`relative rounded-2xl p-6 flex flex-col gap-4 border border-zinc-700 transition-colors hover:border-zinc-600 ${completando ? 'bg-green-900' : 'bg-zinc-800'}`}>
       <button
         onClick={handleEditar}
