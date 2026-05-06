@@ -31,12 +31,16 @@ export default function TarjetaTarea({ nombre, emoji, vida, frecuenciaDias, ulti
   // true durante los 600ms del flash verde; impide clics adicionales mientras está activo.
   const [completando, setCompletando] = useState(false)
 
-  // Activa el flash verde, espera 600ms y luego llama a onCompletar para actualizar el estado.
-  // El orden importa: primero el efecto visual, luego la mutación de datos.
+  // Activa el flash verde, espera 600ms, resetea el estado local y luego actualiza los datos.
+  // setCompletando(false) va antes de onCompletar para que React 18 los batche en un solo render:
+  // la tarjeta vuelve a zinc-800 al mismo tiempo que llegan los nuevos props de vida.
   function handleCompletar() {
     if (completando) return
     setCompletando(true)
-    setTimeout(() => onCompletar(), 600)
+    setTimeout(() => {
+      setCompletando(false)
+      onCompletar()
+    }, 600)
   }
 
   // stopPropagation necesario porque el div padre puede recibir clics y ambos botones
