@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { diasDesde, colorBarra } from '../utils/tareas'
 
 // SVG inline en lugar de imagen para poder controlar color con CSS (stroke="currentColor").
@@ -27,6 +28,17 @@ function IconoLapiz() {
 export default function TarjetaTarea({ nombre, emoji, vida, frecuenciaDias, ultimaVez, onCompletar, onEliminar, onEditar }) {
   const dias = diasDesde(ultimaVez)
 
+  // true durante los 600ms del flash verde; impide clics adicionales mientras está activo.
+  const [completando, setCompletando] = useState(false)
+
+  // Activa el flash verde, espera 600ms y luego llama a onCompletar para actualizar el estado.
+  // El orden importa: primero el efecto visual, luego la mutación de datos.
+  function handleCompletar() {
+    if (completando) return
+    setCompletando(true)
+    setTimeout(() => onCompletar(), 600)
+  }
+
   // stopPropagation necesario porque el div padre puede recibir clics y ambos botones
   // están dentro de él; sin esto el evento burbujearía hacia arriba.
   function handleEliminar(e) {
@@ -40,7 +52,8 @@ export default function TarjetaTarea({ nombre, emoji, vida, frecuenciaDias, ulti
   }
 
   return (
-    <div className="relative bg-zinc-800 rounded-2xl p-6 flex flex-col gap-4 border border-zinc-700 transition-colors hover:border-zinc-600">
+    {/* bg-green-900 reemplaza bg-zinc-800 durante el flash; transition-colors anima el cambio */}
+    <div className={`relative rounded-2xl p-6 flex flex-col gap-4 border border-zinc-700 transition-colors hover:border-zinc-600 ${completando ? 'bg-green-900' : 'bg-zinc-800'}`}>
       <button
         onClick={handleEditar}
         aria-label={`Editar ${nombre}`}
@@ -76,8 +89,9 @@ export default function TarjetaTarea({ nombre, emoji, vida, frecuenciaDias, ulti
       </div>
 
       <button
-        onClick={onCompletar}
-        className="w-full mt-1 py-2 rounded-xl bg-zinc-700 hover:bg-zinc-600 active:scale-95 text-zinc-300 hover:text-white text-sm font-medium transition-all"
+        onClick={handleCompletar}
+        disabled={completando}
+        className="w-full mt-1 py-2 rounded-xl bg-zinc-700 hover:bg-zinc-600 active:scale-95 text-zinc-300 hover:text-white text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
       >
         ✓ Hecho
       </button>
