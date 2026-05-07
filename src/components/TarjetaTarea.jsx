@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { diasDesde, colorBarra } from '../utils/tareas'
+import { diasDesde, colorBarra, obtenerImagen } from '../utils/tareas'
 
 // SVG inline en lugar de imagen para poder controlar color con CSS (stroke="currentColor").
 function IconoBasura() {
@@ -27,6 +27,8 @@ function IconoLapiz() {
 // y botón "✓ Hecho". Recibe la vida ya calculada como prop — no la computa internamente.
 export default function TarjetaTarea({ nombre, emoji, vida, frecuenciaDias, ultimaVez, onCompletar, onEliminar, onEditar }) {
   const dias = diasDesde(ultimaVez)
+  // null si la tarea no tiene personaje asignado; calculado una vez para no llamar la función dos veces en el render.
+  const imagen = obtenerImagen(nombre, vida)
 
   // true durante los 600ms del flash verde; impide clics adicionales mientras está activo.
   const [completando, setCompletando] = useState(false)
@@ -73,7 +75,11 @@ export default function TarjetaTarea({ nombre, emoji, vida, frecuenciaDias, ulti
         <IconoBasura />
       </button>
 
-      <div className="text-5xl text-center">{emoji}</div>
+      {/* Si la tarea tiene personaje asignado, muestra su imagen pixel art; si no, cae al emoji */}
+      {imagen
+        ? <img src={imagen} alt={nombre} className="w-full h-36 object-contain rounded-xl" />
+        : <div className="text-5xl text-center">{emoji}</div>
+      }
       <p className="text-white font-semibold text-center text-lg leading-tight">{nombre}</p>
       <p className="text-zinc-500 text-xs text-center">
         Cada {frecuenciaDias} días · completado {dias === 0 ? 'hoy' : `hace ${dias}d`}

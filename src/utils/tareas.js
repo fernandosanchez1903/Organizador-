@@ -24,3 +24,25 @@ export function colorBarra(vida) {
 export function esEmoji(str) {
   return /\p{Extended_Pictographic}/u.test(str)
 }
+
+// Mapea el nombre canónico de cada tarea (en minúsculas) al identificador de su personaje pixel art.
+// Solo las tareas listadas aquí tienen imagen; el resto usa el emoji como fallback.
+const PERSONAJES = {
+  'lavar trastes': 'plato',
+  'sacar basura': 'bolsa',
+  'limpiar baño': 'baño',
+  'limpiar depa': 'escoba',
+  'ir al gym': 'mancuerna',
+  'llamar a familia': 'carta',
+  'pagar tarjeta de crédito': 'tarjeta',
+}
+
+// Devuelve la ruta al asset del personaje según el nombre de la tarea y su vida actual.
+// Retorna null si la tarea no tiene personaje asignado — el componente usará el emoji.
+export function obtenerImagen(nombreTarea, vida) {
+  const personaje = PERSONAJES[nombreTarea.toLowerCase().trim()]
+  if (!personaje) return null
+
+  const estado = vida > 60 ? 'sano' : vida >= 30 ? 'enfermo' : 'muriendo'
+  return `/assets/tareas/${personaje}-${estado}.jpg`
+}
