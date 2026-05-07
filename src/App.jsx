@@ -4,6 +4,7 @@ import { useTareas } from './hooks/useTareas'
 import { calcularVida } from './utils/tareas'
 import TarjetaTarea from './components/TarjetaTarea'
 import ModalTarea from './components/ModalTarea'
+import BannerUrgente from './components/BannerUrgente'
 
 // Orquesta el estado de UI (qué modal está abierto) y conecta el hook de datos
 // con los componentes visuales. No contiene lógica de negocio ni acceso a localStorage.
@@ -33,6 +34,9 @@ export default function App() {
         <h1 className="text-3xl font-bold text-white tracking-tight">Organizador</h1>
         <p className="text-zinc-400 mt-1 text-sm">Tus tareas tienen vida. No las dejes morir.</p>
       </header>
+
+      {/* Banner de tareas urgentes: se muestra arriba de la grilla si alguna tarea llegó a 0% */}
+      <BannerUrgente tareas={tareas} calcularVida={calcularVida} />
 
       {/* Estado vacío: si no hay tareas, muestra un mensaje orientador en lugar de la grilla vacía */}
       {tareas.length === 0 ? (

@@ -119,7 +119,16 @@ vida = Math.max(0, Math.round(100 - (diasTranscurridos / frecuenciaDias) * 100))
 
 ---
 
+## Sesión 2026-05-06 (parte 2)
+
+- **Assets pixel art integrados**: 21 archivos jpg en `public/assets/tareas/` — 7 personajes × 3 estados (`sano`, `enfermo`, `muriendo`).
+- **`obtenerImagen(nombreTarea, vida)`** en `src/utils/tareas.js`: normaliza el nombre con `.toLowerCase().trim()`, busca en `PERSONAJES`, retorna `/assets/tareas/{personaje}-{estado}.jpg` o `null` si no hay match. Los umbrales de estado siguen la misma lógica que la barra de vida: `> 60` → `sano`, `>= 30` → `enfermo`, `< 30` → `muriendo`.
+- **Mapeo de personajes**: `lavar trastes` → `plato`, `sacar basura` → `bolsa`, `limpiar baño` → `baño`, `limpiar depa` → `escoba`, `ir al gym` → `mancuerna`, `llamar a familia` → `carta`, `pagar tarjeta de crédito` → `tarjeta`.
+- **`TarjetaTarea.jsx`**: calcula `imagen = obtenerImagen(nombre, vida)` una vez al inicio del componente. Si hay match, renderiza `<img>`; si `null`, muestra el emoji como antes.
+
+---
+
 ## Pendiente / ideas anotadas
 
-- Assets pixel art por tarea
-- Notificaciones cuando una tarea llega a 0%
+- PWA básica
+- Notificaciones al abrir la app si hay tareas en 0%
