@@ -1,36 +1,37 @@
 import { colorBarra } from '../utils/tareas'
 
-// Zona superior fija: personaje (gato placeholder) + barra de vida general.
-// z-index 0 para que la zona de tareas al hacer scroll lo tape físicamente.
-export default function ZonaPersonaje({ vidaGeneral, hayTareas }) {
+// Escena completa del personaje: ocupa toda la pantalla como fondo fijo.
+// z-index 0 → el panel de tareas (z-index 10) lo tapa al hacer scroll.
+// El gato está posicionado al ~60% del alto para que quede visible
+// sobre el borde superior del panel de tareas (que empieza en 55dvh).
+export default function ZonaPersonaje({ vidaGeneral }) {
   return (
     <div
-      className="fixed top-0 left-0 right-0 flex flex-col bg-zinc-950"
-      style={{ height: '45dvh', zIndex: 0 }}
+      className="bg-black"
+      style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 0 }}
     >
-      {/* Barra de vida general pegada al tope con padding razonable */}
+      {/* Barra de salud general pegada al tope */}
       <div className="px-6 pt-5 flex flex-col gap-1.5">
         <div className="flex justify-between items-center">
           <span className="text-zinc-500 text-xs tracking-wide uppercase">Salud</span>
           <span className="text-zinc-400 text-xs font-medium tabular-nums">{vidaGeneral}%</span>
         </div>
-        <div className="w-full bg-zinc-800 rounded-full h-1.5 overflow-hidden">
+        <div className="w-full bg-zinc-800 rounded-full overflow-hidden" style={{ height: '6px' }}>
           <div
-            className={`h-1.5 rounded-full transition-all duration-700 ${colorBarra(vidaGeneral)}`}
-            style={{ width: `${vidaGeneral}%` }}
+            className={`rounded-full transition-all duration-700 ${colorBarra(vidaGeneral)}`}
+            style={{ width: `${vidaGeneral}%`, height: '6px' }}
           />
         </div>
       </div>
 
-      {/* Personaje centrado en el espacio restante */}
-      <div className="flex-1 flex flex-col items-center justify-center select-none">
-        {/* Placeholder hasta que lleguen los GIFs de Bianca */}
+      {/* Gato placeholder centrado horizontalmente, a ~60% del alto de pantalla */}
+      <div
+        style={{ position: 'absolute', top: '58%', left: '50%', transform: 'translate(-50%, -50%)' }}
+        className="flex flex-col items-center select-none"
+      >
         <span style={{ fontSize: '96px', lineHeight: 1 }} role="img" aria-label="Gato">
           🐱
         </span>
-        {!hayTareas && (
-          <p className="text-zinc-600 text-sm mt-3">Todo tranquilo por aquí</p>
-        )}
       </div>
     </div>
   )

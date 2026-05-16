@@ -38,7 +38,7 @@ export default function App() {
 
   return (
     <div style={{ height: '100dvh', overflow: 'hidden', position: 'relative' }} className="bg-zinc-950">
-      <ZonaPersonaje vidaGeneral={vidaGeneral} hayTareas={tareas.length > 0} />
+      <ZonaPersonaje vidaGeneral={vidaGeneral} />
       <ZonaTareas
         tareas={tareasOrdenadas}
         onCompletar={completarTarea}
