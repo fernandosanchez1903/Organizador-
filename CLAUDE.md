@@ -25,7 +25,7 @@ App personal para gestionar tareas recurrentes de vida adulta. Un gato animado f
 
 ## Estado actual
 - Rama `master`: v1 completa y deployada en Vercel (organizador-orpin.vercel.app)
-- Rama `v2`: rediseño en desarrollo
+- Rama `v2`: rediseño implementado — layout de dos zonas + bottom sheet draggable
 
 ## Modelo de datos
 Sin cambios respecto a v1. Cada tarea:
@@ -57,25 +57,31 @@ GIFs animados en `public/assets/personaje/`:
 
 Lógica de selección: si la tarea más urgente con vida < 30 tiene GIF específico, mostrarlo. Si no, usar el GIF general según promedio.
 
-## Diseño v2
-Pantalla única dividida en dos zonas:
-1. **Zona personaje (superior, sticky)**: GIF del gato con su escena completa + barra de vida general encima. Se queda fija mientras las tareas scrollean encima tapándola gradualmente.
-2. **Zona tareas (inferior, scrolleable)**: lista compacta de tarjetas. Cada tarjeta: emoji + nombre + barra de vida individual en una sola fila. Tap en tarjeta = marcar como hecha. Editar/eliminar via swipe (implementar después).
+## Layout v2 (implementado)
+Pantalla única dividida en dos zonas con `position: fixed` ambas:
+1. **ZonaPersonaje** (`z-index 0`): fondo negro, ocupa toda la pantalla (`top 0` → `bottom 0`). Barra de salud general pegada al tope. Emoji/GIF del gato posicionado al 58% del alto (`position: absolute`). Placeholder listo para reemplazar por GIFs de Bianca.
+2. **ZonaTareas** (`z-index 10`): panel `bottom 0`, `border-radius 24px` arriba, fondo `zinc-900`. Empieza en `top: 55dvh` inicial. Es un bottom sheet draggable: el usuario puede arrastrarlo hacia arriba (límite: `15dvh`) o hacia abajo. Al llegar a `15dvh`, se ancla y el scroll de la lista toma control.
 
-Botón `+` flotante abajo derecha para crear tareas.
+`html, body { overflow: hidden }` en `index.css` — el único scroll posible es dentro de ZonaTareas.  
+Usar `dvh` (no `vh`) en todas partes para iOS.
+
+Botón `+` flotante (`z-index 50`) abajo derecha.
 
 ## Pendiente v2
-- [ ] Rediseño completo de UI (zona personaje + lista compacta)
-- [ ] Lógica `obtenerAsset(nombreTarea, vida)` en utils
-- [ ] Swipe para editar/eliminar
+- [x] Rediseño completo de UI (zona personaje + lista compacta + bottom sheet)
+- [ ] Lógica `obtenerAsset(nombreTarea, vida)` en utils (reemplaza `obtenerImagen`)
+- [ ] Swipe para editar/eliminar tarjetas
 - [ ] Onboarding de una sola vez explicando el swipe
 - [ ] GIFs del personaje (bloqueado esperando assets de Bianca)
 - [ ] GIFs específicos por tarea (bloqueado esperando definir tareas + assets)
 
 ## Arquitectura
-- **`App.jsx`** — orquesta estado de UI (`modalEstado`) y conecta el hook con los componentes. Sin lógica de negocio.
+- **`App.jsx`** — orquesta estado de UI (`modalEstado`) y conecta el hook con los componentes. Calcula `vidaGeneral` (promedio) y ordena tareas por vida ascendente. Sin lógica de negocio.
 - **`hooks/useTareas.js`** — único punto de acceso a localStorage. Expone `{ tareas, completarTarea, eliminarTarea, editarTarea, agregarTarea }`. Todos los writes pasan por `actualizarTareas()` que sincroniza React state + localStorage en un solo lugar. Incluye seed de 3 tareas si localStorage está vacío.
 - **`utils/tareas.js`** — funciones puras: `calcularVida`, `diasDesde`, `colorBarra`, `esEmoji`, `obtenerImagen`. Ningún componente calcula vida directamente; todo pasa por aquí.
+- **`ZonaPersonaje.jsx`** — fondo fijo de toda la pantalla. Solo recibe `vidaGeneral`. Placeholder para GIFs de Bianca.
+- **`ZonaTareas.jsx`** — bottom sheet con drag gesture. **Patrón clave**: el `top` del panel NO está en el `style` prop de React — se gestiona 100% de forma imperativa vía `panelRef.current.style.top` en `useEffect`. Esto evita que los re-renders (al completar/agregar tareas) reseteen la posición del panel. Todo el estado del gesto vive en refs (`gesto`, `posicionRef`). `posicionRef.current`: `'libre'` | `'arriba'` (anclado en `15dvh`).
+- **`TarjetaTarea.jsx`** — tarjeta compacta de una fila. Flash verde de 600ms al completar (`completando` state). `stopPropagation` en botones de editar/eliminar para no disparar el complete.
 - **Tailwind v4**: configurado vía plugin `@tailwindcss/vite` en `vite.config.js`. No hay `tailwind.config.js`. El único import necesario es `@import "tailwindcss"` en `index.css`.
 - **PWA**: `public/manifest.json` + `public/sw.js` (cache-first). El SW se registra solo en producción (`import.meta.env.PROD`) en `main.jsx`.
 

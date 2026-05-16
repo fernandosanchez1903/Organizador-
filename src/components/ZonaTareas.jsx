@@ -50,6 +50,7 @@ export default function ZonaTareas({ tareas, onCompletar, onEliminar, onEditar }
     // cualquier transición en curso para que el drag empiece desde ahí.
     function onTouchStart(e) {
       panel.style.transition = 'none'
+      panel.style.overflowY = 'visible'
       gesto.current.arrastrando = false
       gesto.current.startY = e.touches[0].clientY
       gesto.current.topBase = leerTopActualPx()
@@ -111,6 +112,7 @@ export default function ZonaTareas({ tareas, onCompletar, onEliminar, onEditar }
     // Si el panel llegó al ancla (15dvh), fijar en ANCLA_ARRIBA y cambiar modo.
     function onTouchEnd() {
       panel.style.transform = 'translateY(0)'
+      panel.style.overflowY = 'auto'
 
       if (!gesto.current.arrastrando) return
 
