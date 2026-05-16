@@ -37,8 +37,7 @@ export default function App() {
   }
 
   return (
-    // overflow-hidden en el root para que el scroll ocurra dentro de ZonaTareas, no en el documento
-    <div className="h-dvh overflow-hidden bg-zinc-950">
+    <div style={{ height: '100dvh', overflow: 'hidden', position: 'relative' }} className="bg-zinc-950">
       <ZonaPersonaje vidaGeneral={vidaGeneral} hayTareas={tareas.length > 0} />
       <ZonaTareas
         tareas={tareasOrdenadas}

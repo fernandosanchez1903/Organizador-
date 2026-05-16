@@ -6,7 +6,7 @@ export default function ZonaPersonaje({ vidaGeneral, hayTareas }) {
   return (
     <div
       className="fixed top-0 left-0 right-0 flex flex-col bg-zinc-950"
-      style={{ height: '45vh', zIndex: 0 }}
+      style={{ height: '45dvh', zIndex: 0 }}
     >
       {/* Barra de vida general pegada al tope con padding razonable */}
       <div className="px-6 pt-5 flex flex-col gap-1.5">

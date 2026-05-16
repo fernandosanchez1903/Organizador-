@@ -7,7 +7,7 @@ export default function ZonaTareas({ tareas, onCompletar, onEliminar, onEditar }
   return (
     <div
       className="fixed left-0 right-0 bottom-0 bg-zinc-900 overflow-y-auto"
-      style={{ top: '45vh', zIndex: 10, borderRadius: '24px 24px 0 0' }}
+      style={{ top: '45dvh', zIndex: 10, borderRadius: '24px 24px 0 0' }}
     >
       {/* Header sticky dentro del scroll: se queda arriba al bajar la lista */}
       <div className="sticky top-0 bg-zinc-900 px-5 pt-5 pb-3 z-10">
