@@ -158,6 +158,7 @@ export default function ZonaTareas({ tareas, onCompletar, onEliminar, onEditar }
         zIndex: 10,
         borderRadius: '24px 24px 0 0',
         willChange: 'transform, top',
+        minHeight: '100%',
       }}
     >
       {/* Header sticky: permanece visible al hacer scroll en la lista */}
