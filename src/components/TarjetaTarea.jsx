@@ -3,10 +3,11 @@ import { colorBarra } from '../utils/tareas'
 
 // Tarjeta compacta de una sola fila: [emoji] [nombre] [barra vida]
 // Tap = completar con flash verde.
-// Swipe izquierda = confirmar eliminar. Swipe derecha = editar directo.
+// Swipe izquierda = confirmar eliminar (hint rojo). Swipe derecha = editar (hint verde).
 export default function TarjetaTarea({ nombre, emoji, vida, onCompletar, onEliminar, onEditar }) {
   const [completando, setCompletando] = useState(false)
   const tarjetaRef = useRef(null)
+  const bgRef = useRef(null)
 
   // Refs para callbacks y nombre — evitan stale closures sin re-registrar listeners
   const cbRef = useRef({ nombre, onEliminar, onEditar })
@@ -36,18 +37,29 @@ export default function TarjetaTarea({ nombre, emoji, vida, onCompletar, onElimi
 
   useEffect(() => {
     const el = tarjetaRef.current
-    if (!el) return
+    const bgEl = bgRef.current
+    if (!el || !bgEl) return
 
     function aplicarTranslate(dx) {
       el.style.transform = `translateX(${dx}px)`
       swipe.current.deltaX = dx
+      // Opacidad proporcional al desplazamiento; máximo al llegar al umbral
+      const umbral = el.offsetWidth * 0.40
+      const progreso = Math.min(Math.abs(dx) / umbral, 1)
+      bgEl.style.opacity = (progreso * 0.55).toString()
+      bgEl.style.backgroundColor = dx < 0 ? '#ef4444' : '#22c55e'
     }
 
-    // Regresa la tarjeta a su posición con transición suave
+    // Regresa la tarjeta y desvanece el color con transición suave
     function snapDeVuelta() {
       el.style.transition = 'transform 0.25s ease'
       el.style.transform = 'translateX(0)'
-      setTimeout(() => { el.style.transition = '' }, 250)
+      bgEl.style.transition = 'opacity 0.25s ease'
+      bgEl.style.opacity = '0'
+      setTimeout(() => {
+        el.style.transition = ''
+        bgEl.style.transition = ''
+      }, 250)
     }
 
     function onTouchStart(e) {
@@ -57,6 +69,8 @@ export default function TarjetaTarea({ nombre, emoji, vida, onCompletar, onElimi
       swipe.current.deltaX = 0
       swipe.current.esDrag = false
       el.style.transition = 'none'
+      bgEl.style.transition = 'none'
+      bgEl.style.opacity = '0'
     }
 
     function onTouchMove(e) {
@@ -119,22 +133,31 @@ export default function TarjetaTarea({ nombre, emoji, vida, onCompletar, onElimi
     <li
       ref={tarjetaRef}
       onClick={handleCompletar}
-      className={`flex items-center gap-3 px-4 py-4 rounded-2xl border cursor-pointer select-none
+      className={`relative overflow-hidden rounded-2xl border cursor-pointer select-none
         ${completando
           ? 'bg-green-950 border-green-800'
           : 'bg-zinc-800 border-zinc-700 active:scale-[0.98]'
         }`}
     >
-      <span className="text-[32px] leading-none shrink-0">{emoji}</span>
-      <span className="flex-1 text-white text-base font-medium truncate">{nombre}</span>
-      <div className="w-20 shrink-0 flex flex-col gap-1">
-        <div className="w-full bg-zinc-700 rounded-full h-[6px] overflow-hidden">
-          <div
-            className={`h-[6px] rounded-full transition-all duration-500 ${colorBarra(vida)}`}
-            style={{ width: `${vida}%` }}
-          />
+      {/* Hint de color detrás del contenido — opacidad gestionada imperativamnte durante el swipe */}
+      <div
+        ref={bgRef}
+        style={{ position: 'absolute', inset: 0, opacity: 0, pointerEvents: 'none', zIndex: 0 }}
+      />
+
+      {/* Contenido sobre el hint */}
+      <div className="relative z-10 flex items-center gap-3 px-4 py-4 w-full">
+        <span className="text-[32px] leading-none shrink-0">{emoji}</span>
+        <span className="flex-1 text-white text-base font-medium truncate">{nombre}</span>
+        <div className="w-20 shrink-0 flex flex-col gap-1">
+          <div className="w-full bg-zinc-700 rounded-full h-[6px] overflow-hidden">
+            <div
+              className={`h-[6px] rounded-full transition-all duration-500 ${colorBarra(vida)}`}
+              style={{ width: `${vida}%` }}
+            />
+          </div>
+          <span className="text-zinc-500 text-[10px] text-right tabular-nums">{vida}%</span>
         </div>
-        <span className="text-zinc-500 text-[10px] text-right tabular-nums">{vida}%</span>
       </div>
     </li>
   )
