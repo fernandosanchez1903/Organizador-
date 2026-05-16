@@ -1,15 +1,38 @@
 import { useState, useRef, useEffect } from 'react'
 import { colorBarra } from '../utils/tareas'
 
+function IconoBasura() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="3 6 5 6 21 6" />
+      <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
+      <path d="M10 11v6M14 11v6" />
+      <path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2" />
+    </svg>
+  )
+}
+
+function IconoLapiz() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
+      <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
+    </svg>
+  )
+}
+
 // Tarjeta compacta de una sola fila: [emoji] [nombre] [barra vida]
 // Tap = completar con flash verde.
-// Swipe izquierda = confirmar eliminar (hint rojo). Swipe derecha = editar (hint verde).
+// Swipe izquierda = confirmar eliminar (fondo rojo, ícono basura derecha).
+// Swipe derecha = editar directo (fondo verde, ícono lápiz izquierda).
 export default function TarjetaTarea({ nombre, emoji, vida, onCompletar, onEliminar, onEditar }) {
   const [completando, setCompletando] = useState(false)
-  const tarjetaRef = useRef(null)
-  const bgRef = useRef(null)
+  const contenedorRef = useRef(null) // li — recibe touch events y define offsetWidth para el umbral
+  const tarjetaRef = useRef(null)    // cara de la tarjeta — recibe translateX
+  const bgLeftRef = useRef(null)     // fondo rojo revelado al deslizar a la izquierda
+  const bgRightRef = useRef(null)    // fondo verde revelado al deslizar a la derecha
 
-  // Refs para callbacks y nombre — evitan stale closures sin re-registrar listeners
+  // Refs para callbacks — evitan stale closures sin re-registrar listeners
   const cbRef = useRef({ nombre, onEliminar, onEditar })
   useEffect(() => {
     cbRef.current = { nombre, onEliminar, onEditar }
@@ -36,29 +59,39 @@ export default function TarjetaTarea({ nombre, emoji, vida, onCompletar, onElimi
   }
 
   useEffect(() => {
-    const el = tarjetaRef.current
-    const bgEl = bgRef.current
-    if (!el || !bgEl) return
+    const contenedor = contenedorRef.current
+    const tarjeta = tarjetaRef.current
+    const bgLeft = bgLeftRef.current
+    const bgRight = bgRightRef.current
+    if (!contenedor || !tarjeta || !bgLeft || !bgRight) return
 
-    function aplicarTranslate(dx) {
-      el.style.transform = `translateX(${dx}px)`
-      swipe.current.deltaX = dx
-      // Opacidad proporcional al desplazamiento; máximo al llegar al umbral
-      const umbral = el.offsetWidth * 0.40
-      const progreso = Math.min(Math.abs(dx) / umbral, 1)
-      bgEl.style.opacity = (progreso * 0.55).toString()
-      bgEl.style.backgroundColor = dx < 0 ? '#ef4444' : '#22c55e'
+    function ocultarFondos() {
+      bgLeft.style.display = 'none'
+      bgRight.style.display = 'none'
     }
 
-    // Regresa la tarjeta y desvanece el color con transición suave
+    function aplicarTranslate(dx) {
+      tarjeta.style.transform = `translateX(${dx}px)`
+      swipe.current.deltaX = dx
+      // Mostrar el fondo correspondiente a la dirección del swipe
+      if (dx < 0) {
+        bgLeft.style.display = 'flex'
+        bgRight.style.display = 'none'
+      } else if (dx > 0) {
+        bgRight.style.display = 'flex'
+        bgLeft.style.display = 'none'
+      } else {
+        ocultarFondos()
+      }
+    }
+
+    // Regresa la tarjeta a su posición y oculta los fondos al terminar la transición
     function snapDeVuelta() {
-      el.style.transition = 'transform 0.25s ease'
-      el.style.transform = 'translateX(0)'
-      bgEl.style.transition = 'opacity 0.25s ease'
-      bgEl.style.opacity = '0'
+      tarjeta.style.transition = 'transform 0.25s ease'
+      tarjeta.style.transform = 'translateX(0)'
       setTimeout(() => {
-        el.style.transition = ''
-        bgEl.style.transition = ''
+        tarjeta.style.transition = ''
+        ocultarFondos()
       }, 250)
     }
 
@@ -68,9 +101,8 @@ export default function TarjetaTarea({ nombre, emoji, vida, onCompletar, onElimi
       swipe.current.startY = e.touches[0].clientY
       swipe.current.deltaX = 0
       swipe.current.esDrag = false
-      el.style.transition = 'none'
-      bgEl.style.transition = 'none'
-      bgEl.style.opacity = '0'
+      tarjeta.style.transition = 'none'
+      ocultarFondos()
     }
 
     function onTouchMove(e) {
@@ -99,7 +131,7 @@ export default function TarjetaTarea({ nombre, emoji, vida, onCompletar, onElimi
       }
       swipe.current.activo = false
 
-      const umbral = el.offsetWidth * 0.40
+      const umbral = contenedor.offsetWidth * 0.40
       const dx = swipe.current.deltaX
 
       snapDeVuelta()
@@ -116,37 +148,64 @@ export default function TarjetaTarea({ nombre, emoji, vida, onCompletar, onElimi
       setTimeout(() => { swipe.current.esDrag = false }, 0)
     }
 
-    el.addEventListener('touchstart', onTouchStart, { passive: true })
-    el.addEventListener('touchmove', onTouchMove, { passive: false })
-    el.addEventListener('touchend', onTouchEnd, { passive: true })
-    el.addEventListener('touchcancel', onTouchEnd, { passive: true })
+    contenedor.addEventListener('touchstart', onTouchStart, { passive: true })
+    contenedor.addEventListener('touchmove', onTouchMove, { passive: false })
+    contenedor.addEventListener('touchend', onTouchEnd, { passive: true })
+    contenedor.addEventListener('touchcancel', onTouchEnd, { passive: true })
 
     return () => {
-      el.removeEventListener('touchstart', onTouchStart)
-      el.removeEventListener('touchmove', onTouchMove)
-      el.removeEventListener('touchend', onTouchEnd)
-      el.removeEventListener('touchcancel', onTouchEnd)
+      contenedor.removeEventListener('touchstart', onTouchStart)
+      contenedor.removeEventListener('touchmove', onTouchMove)
+      contenedor.removeEventListener('touchend', onTouchEnd)
+      contenedor.removeEventListener('touchcancel', onTouchEnd)
     }
   }, []) // deps vacías: callbacks y nombre viven en cbRef
 
   return (
     <li
-      ref={tarjetaRef}
+      ref={contenedorRef}
       onClick={handleCompletar}
-      className={`relative overflow-hidden rounded-2xl border cursor-pointer select-none
-        ${completando
-          ? 'bg-green-950 border-green-800'
-          : 'bg-zinc-800 border-zinc-700 active:scale-[0.98]'
-        }`}
+      className="relative overflow-hidden rounded-2xl cursor-pointer select-none"
     >
-      {/* Hint de color detrás del contenido — opacidad gestionada imperativamnte durante el swipe */}
+      {/* Fondo rojo — revelado al deslizar a la izquierda; ícono basura en el lado derecho */}
       <div
-        ref={bgRef}
-        style={{ position: 'absolute', inset: 0, opacity: 0, pointerEvents: 'none', zIndex: 0 }}
-      />
+        ref={bgLeftRef}
+        style={{
+          position: 'absolute', inset: 0,
+          backgroundColor: '#ef4444',
+          display: 'none',
+          alignItems: 'center',
+          justifyContent: 'flex-end',
+          paddingRight: '20px',
+        }}
+      >
+        <IconoBasura />
+      </div>
 
-      {/* Contenido sobre el hint */}
-      <div className="relative z-10 flex items-center gap-3 px-4 py-4 w-full">
+      {/* Fondo verde — revelado al deslizar a la derecha; ícono lápiz en el lado izquierdo */}
+      <div
+        ref={bgRightRef}
+        style={{
+          position: 'absolute', inset: 0,
+          backgroundColor: '#22c55e',
+          display: 'none',
+          alignItems: 'center',
+          justifyContent: 'flex-start',
+          paddingLeft: '20px',
+        }}
+      >
+        <IconoLapiz />
+      </div>
+
+      {/* Cara de la tarjeta — se mueve encima de los fondos vía translateX */}
+      <div
+        ref={tarjetaRef}
+        className={`relative flex items-center gap-3 px-4 py-4 rounded-2xl border
+          ${completando
+            ? 'bg-green-950 border-green-800'
+            : 'bg-zinc-800 border-zinc-700'
+          }`}
+      >
         <span className="text-[32px] leading-none shrink-0">{emoji}</span>
         <span className="flex-1 text-white text-base font-medium truncate">{nombre}</span>
         <div className="w-20 shrink-0 flex flex-col gap-1">
