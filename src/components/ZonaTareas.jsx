@@ -82,7 +82,7 @@ export default function ZonaTareas({ tareas, onCompletar, onEliminar, onEditar }
         // Dedo hacia abajo en el tope → soltar el ancla, mover panel abajo
         e.preventDefault()
         gesto.current.arrastrando = true
-        aplicarTransform(Math.min(window.innerHeight * 0.80 - gesto.current.topBase, deltaTotal))
+        aplicarTransform(Math.min(window.innerHeight * 0.65 - gesto.current.topBase, deltaTotal))
         return
       }
 
@@ -103,7 +103,7 @@ export default function ZonaTareas({ tareas, onCompletar, onEliminar, onEditar }
         // Dedo hacia abajo en el tope → mover panel abajo
         e.preventDefault()
         gesto.current.arrastrando = true
-        aplicarTransform(Math.min(window.innerHeight * 0.80 - gesto.current.topBase, deltaTotal))
+        aplicarTransform(Math.min(window.innerHeight * 0.65 - gesto.current.topBase, deltaTotal))
       }
       // deltaTotal > 0 + scrollTop > 0 → lista scrollea, no interferir
     }
