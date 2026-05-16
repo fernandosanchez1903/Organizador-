@@ -1,45 +1,31 @@
-import { useRef, useState, useEffect } from 'react'
+import { useRef, useEffect } from 'react'
 import { calcularVida } from '../utils/tareas'
 import TarjetaTarea from './TarjetaTarea'
 
-// Dos posiciones de snap en CSS (top del panel fijo)
-const POS_ABAJO = '55dvh'
-const POS_ARRIBA = '15dvh'
+// Ancla superior: si el panel llega aquí o más arriba, se fija y el scroll toma control
+const ANCLA_ARRIBA = '15dvh'
 
-// Flick: si la velocidad supera este umbral al soltar, se snap en esa dirección
-const UMBRAL_VELOCIDAD = 0.3 // px/ms
-
-// Panel con dos modos:
-//   Drag: transform translateY sigue el dedo sin transición (GPU, sin re-renders)
-//   Snap: top cambia con transition 0.3s; transform se quita primero vía reflow
-//         para que la animación arranque desde la posición visual real
+// El panel puede estar en dos modos:
+//   'arriba' — anclado en 15dvh; el scroll de la lista tiene prioridad
+//   'libre'  — en cualquier otra posición; el drag del panel tiene prioridad
+//
+// top se gestiona 100% por DOM imperativo (sin React state) para que
+// re-renders de la lista no reseteen la posición del panel
 export default function ZonaTareas({ tareas, onCompletar, onEliminar, onEditar }) {
-  // Estado React: determina el top base del panel en el JSX
-  const [posicion, setPosicion] = useState('abajo')
-
   const panelRef = useRef(null)
 
-  // Espejo de posicion para leer valor fresco dentro de los event listeners
-  // sin necesidad de re-registrarlos en cada cambio de estado
-  const posicionRef = useRef('abajo')
+  // Modo actual del panel; leído dentro de los event listeners sin stale closures
+  const posicionRef = useRef('libre')
 
-  // Estado mutable del gesto activo; no dispara re-renders
+  // Estado mutable del gesto; no dispara re-renders
   const gesto = useRef({
-    arrastrando: false,   // true cuando el gesto confirmó ser un drag del panel
-    startY: 0,            // Y del touchstart
-    liveTransformY: 0,    // translateY acumulado durante el drag (actualizado en cada frame)
-    ultimaY: 0,
-    velocidad: 0,         // px/ms, actualizada cada touchmove
-    ultimoTiempo: 0,
+    arrastrando: false,
+    startY: 0,         // Y del touchstart, referencia para calcular deltaTotal
+    topBase: 0,        // top del panel en px al inicio del gesto (leído del DOM)
+    liveTransformY: 0, // translateY aplicado en el último frame
   })
 
-  // Actualiza ref y estado React en sincronía
-  function actualizarPosicion(nueva) {
-    posicionRef.current = nueva
-    setPosicion(nueva)
-  }
-
-  // Escribe transform directamente en el DOM — evita pasar por React en cada frame
+  // Escribe transform directamente en el DOM para evitar re-renders en el hot path
   function aplicarTransform(dy) {
     const panel = panelRef.current
     if (!panel) return
@@ -47,137 +33,109 @@ export default function ZonaTareas({ tareas, onCompletar, onEliminar, onEditar }
     gesto.current.liveTransformY = dy
   }
 
-  // Distancia máxima de drag en píxeles (diferencia entre 55dvh y 15dvh)
-  function getMaxDrag() {
-    return window.innerHeight * 0.40
-  }
-
-  // Anima el snap al soltar:
-  // 1. Fija top en la posición visual actual (top base + transform acumulado)
-  // 2. Quita el transform → ningún cambio visual, pero ahora top = posición real
-  // 3. Reflow forzado → el navegador registra el estado antes de la transición
-  // 4. Activa transition y cambia top al valor de snap → animación limpia
-  function hacerSnap(targetPosicion) {
-    const panel = panelRef.current
-    if (!panel) return
-
-    const topBasePx = posicionRef.current === 'abajo'
-      ? window.innerHeight * 0.55
-      : window.innerHeight * 0.15
-    const visualTopPx = topBasePx + gesto.current.liveTransformY
-
-    panel.style.transition = 'none'
-    panel.style.top = `${visualTopPx}px`
-    panel.style.transform = 'translateY(0)'
-
-    // Forzar reflow: el navegador procesa los dos cambios anteriores antes
-    // de que apliquemos la transición; sin esto, la animación no tiene punto de inicio
-    void panel.offsetHeight
-
-    panel.style.transition = 'top 0.3s ease'
-    panel.style.top = targetPosicion === 'abajo' ? POS_ABAJO : POS_ARRIBA
-
-    gesto.current.arrastrando = false
-    gesto.current.liveTransformY = 0
-    actualizarPosicion(targetPosicion)
-  }
-
   useEffect(() => {
     const panel = panelRef.current
     if (!panel) return
 
-    // Resetea el estado del gesto y detiene cualquier transición en curso
-    function onTouchStart(e) {
-      const touch = e.touches[0]
-      gesto.current.arrastrando = false
-      gesto.current.startY = touch.clientY
-      gesto.current.liveTransformY = 0
-      gesto.current.ultimaY = touch.clientY
-      gesto.current.velocidad = 0
-      gesto.current.ultimoTiempo = Date.now()
-      // Interrumpir transición CSS en curso para que el drag empiece desde aquí
-      panel.style.transition = 'none'
+    // Posición inicial: 55dvh (panel visible en la parte inferior de la pantalla)
+    panel.style.top = '55dvh'
+
+    // Lee el top computado actual del panel en píxeles.
+    // getComputedStyle resuelve dvh/rem a px, incluso durante animaciones.
+    function leerTopActualPx() {
+      return parseFloat(getComputedStyle(panel).top)
     }
 
-    // Resuelve en cada frame si el gesto pertenece al drag del panel o al scroll de la lista.
-    // Panel abajo: cualquier dedo hacia arriba mueve el panel.
-    // Panel arriba: solo mueve el panel si scrollTop === 0 y dedo va hacia abajo;
-    //               en cualquier otro caso la lista scrollea normalmente.
+    // Captura la posición visual del panel al inicio del gesto y detiene
+    // cualquier transición en curso para que el drag empiece desde ahí.
+    function onTouchStart(e) {
+      panel.style.transition = 'none'
+      gesto.current.arrastrando = false
+      gesto.current.startY = e.touches[0].clientY
+      gesto.current.topBase = leerTopActualPx()
+      gesto.current.liveTransformY = 0
+    }
+
+    // Decide en cada frame a quién pertenece el gesto: al panel o a la lista.
+    //
+    // Modo 'arriba' (anclado en 15dvh):
+    //   - scrollTop > 0 → la lista scrollea, no tocar el panel
+    //   - deltaTotal <= 0 (dedo arriba o quieto) → la lista scrollea
+    //   - deltaTotal > 0 + scrollTop === 0 → drag del panel hacia abajo
+    //
+    // Modo 'libre':
+    //   - deltaTotal < 0 (dedo arriba) → drag del panel hacia arriba, clampear en 15dvh
+    //   - deltaTotal > 0 + scrollTop === 0 → drag del panel hacia abajo
+    //   - deltaTotal > 0 + scrollTop > 0 → la lista scrollea
     function onTouchMove(e) {
       const touch = e.touches[0]
-      const ahora = Date.now()
-      const deltaY = touch.clientY - gesto.current.startY
+      // deltaTotal: desplazamiento acumulado desde el touchstart, no incremental por frame.
+      // Así el clamp y las condiciones son directas sin necesidad de acumular estado.
+      const deltaTotal = touch.clientY - gesto.current.startY
       const scrollTop = panel.scrollTop
+      const anclaArribaPx = window.innerHeight * 0.15
 
-      // Velocidad actualizada en cada frame para flick preciso al soltar
-      const dt = ahora - gesto.current.ultimoTiempo
-      if (dt > 0) {
-        gesto.current.velocidad = (touch.clientY - gesto.current.ultimaY) / dt
-      }
-      gesto.current.ultimaY = touch.clientY
-      gesto.current.ultimoTiempo = ahora
-
-      if (posicionRef.current === 'abajo') {
-        if (deltaY < 0) {
-          // Gesto hacia arriba con panel abajo → drag del panel, bloquear scroll
-          e.preventDefault()
-          gesto.current.arrastrando = true
-          aplicarTransform(Math.max(-getMaxDrag(), deltaY))
-        }
-        // Gesto hacia abajo con panel ya abajo → ignorar (sin más espacio)
-        return
-      }
-
-      // Panel arriba:
-      if (scrollTop > 0) {
-        // Lista tiene scroll → el gesto pertenece a la lista
-        return
-      }
-
-      if (deltaY > 0) {
-        // Tope del scroll + dedo hacia abajo → drag del panel hacia abajo
+      if (posicionRef.current === 'arriba') {
+        if (scrollTop > 0) return      // lista con scroll: gesto es suyo
+        if (deltaTotal <= 0) return    // dedo arriba en el tope: scroll normal
+        // Dedo hacia abajo en el tope → soltar el ancla, mover panel abajo
         e.preventDefault()
         gesto.current.arrastrando = true
-        aplicarTransform(Math.min(getMaxDrag(), deltaY))
+        aplicarTransform(Math.min(window.innerHeight * 0.85, deltaTotal))
         return
       }
 
-      // scrollTop === 0 + dedo hacia arriba → scroll normal de la lista
+      // Modo 'libre':
+      if (deltaTotal < 0) {
+        // Dedo hacia arriba → mover panel hacia arriba, sin pasar el ancla
+        const topProyectado = gesto.current.topBase + deltaTotal
+        const dy = topProyectado <= anclaArribaPx
+          ? anclaArribaPx - gesto.current.topBase  // clamp: parar en 15dvh
+          : deltaTotal
+        e.preventDefault()
+        gesto.current.arrastrando = true
+        aplicarTransform(dy)
+        return
+      }
+
+      if (deltaTotal > 0 && scrollTop === 0) {
+        // Dedo hacia abajo en el tope → mover panel abajo
+        e.preventDefault()
+        gesto.current.arrastrando = true
+        aplicarTransform(Math.min(window.innerHeight * 0.85, deltaTotal))
+      }
+      // deltaTotal > 0 + scrollTop > 0 → lista scrollea, no interferir
     }
 
-    // Determina la posición de snap por velocidad (flick) o distancia al punto medio (35dvh)
+    // Al soltar: fijar top en la posición visual actual sin animación.
+    // Si el panel llegó al ancla (15dvh), fijar en ANCLA_ARRIBA y cambiar modo.
     function onTouchEnd() {
-      if (!gesto.current.arrastrando) {
-        // Gesto sin drag real: limpiar transform por si quedó algo residual
-        panel.style.transform = 'translateY(0)'
-        return
-      }
+      panel.style.transform = 'translateY(0)'
 
-      const velocidad = gesto.current.velocidad
-      const topBasePx = posicionRef.current === 'abajo'
-        ? window.innerHeight * 0.55
-        : window.innerHeight * 0.15
-      const visualTopPx = topBasePx + gesto.current.liveTransformY
-      const mitadPx = window.innerHeight * 0.35 // 35dvh = punto medio entre 15dvh y 55dvh
+      if (!gesto.current.arrastrando) return
 
-      let target
-      if (velocidad > UMBRAL_VELOCIDAD) {
-        target = 'abajo'    // flick hacia abajo
-      } else if (velocidad < -UMBRAL_VELOCIDAD) {
-        target = 'arriba'   // flick hacia arriba
+      const anclaArribaPx = window.innerHeight * 0.15
+      const visualTopPx = gesto.current.topBase + gesto.current.liveTransformY
+
+      panel.style.transition = 'none'
+
+      if (visualTopPx <= anclaArribaPx) {
+        panel.style.top = ANCLA_ARRIBA
+        posicionRef.current = 'arriba'
       } else {
-        // Sin flick: snap al lado más cercano del punto medio
-        target = visualTopPx > mitadPx ? 'abajo' : 'arriba'
+        panel.style.top = `${visualTopPx}px`
+        posicionRef.current = 'libre'
       }
 
-      hacerSnap(target)
+      gesto.current.arrastrando = false
+      gesto.current.liveTransformY = 0
     }
 
-    // passive: true donde sea posible; false solo en touchmove donde se necesita preventDefault
+    // passive: true donde sea posible; false en touchmove para poder llamar preventDefault
     panel.addEventListener('touchstart', onTouchStart, { passive: true })
     panel.addEventListener('touchmove', onTouchMove, { passive: false })
     panel.addEventListener('touchend', onTouchEnd, { passive: true })
-    // touchcancel ocurre cuando el OS interrumpe el gesto (llamada, notificación)
+    // touchcancel cubre interrupciones del OS (llamada entrante, notificación del sistema)
     panel.addEventListener('touchcancel', onTouchEnd, { passive: true })
 
     return () => {
@@ -189,11 +147,12 @@ export default function ZonaTareas({ tareas, onCompletar, onEliminar, onEditar }
   }, []) // deps vacías: todo el estado mutable vive en refs
 
   return (
+    // top NO está en el style de React — gestionado imperativamnete en el useEffect
+    // para que re-renders (al completar/agregar tareas) no reseteen la posición del panel
     <div
       ref={panelRef}
       className="fixed left-0 right-0 bottom-0 bg-zinc-900 overflow-y-auto"
       style={{
-        top: posicion === 'abajo' ? POS_ABAJO : POS_ARRIBA,
         zIndex: 10,
         borderRadius: '24px 24px 0 0',
         willChange: 'transform, top',
