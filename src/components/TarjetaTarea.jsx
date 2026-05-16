@@ -53,23 +53,23 @@ export default function TarjetaTarea({ nombre, emoji, vida, onCompletar, onElimi
   return (
     <li
       onClick={handleCompletar}
-      className={`flex items-center gap-3 px-4 py-3.5 rounded-2xl border transition-all cursor-pointer select-none
+      className={`flex items-center gap-3 px-4 py-4 rounded-2xl border transition-all cursor-pointer select-none
         ${completando
           ? 'bg-green-950 border-green-800'
           : 'bg-zinc-800 border-zinc-700 active:scale-[0.98]'
         }`}
     >
       {/* Emoji de la tarea */}
-      <span className="text-2xl leading-none shrink-0">{emoji}</span>
+      <span className="text-[32px] leading-none shrink-0">{emoji}</span>
 
       {/* Nombre crece para ocupar el espacio disponible */}
-      <span className="flex-1 text-white text-sm font-medium truncate">{nombre}</span>
+      <span className="flex-1 text-white text-base font-medium truncate">{nombre}</span>
 
       {/* Barra de vida individual, ancho fijo ~80px */}
       <div className="w-20 shrink-0 flex flex-col gap-1">
-        <div className="w-full bg-zinc-700 rounded-full h-1.5 overflow-hidden">
+        <div className="w-full bg-zinc-700 rounded-full h-[6px] overflow-hidden">
           <div
-            className={`h-1.5 rounded-full transition-all duration-500 ${colorBarra(vida)}`}
+            className={`h-[6px] rounded-full transition-all duration-500 ${colorBarra(vida)}`}
             style={{ width: `${vida}%` }}
           />
         </div>
