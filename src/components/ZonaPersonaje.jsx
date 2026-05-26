@@ -26,7 +26,7 @@ export default function ZonaPersonaje({ vidaGeneral }) {
       />
 
       {/* Barra de salud general pegada al tope, sobre el fondo */}
-      <div className="relative px-6 pt-5 flex flex-col gap-1.5" style={{ zIndex: 1 }}>
+      <div className="relative px-6 pt-5 flex flex-col gap-1.5" style={{ zIndex: 1, paddingTop: 'calc(env(safe-area-inset-top) + 1.25rem)' }}>
         <div className="flex justify-between items-center">
           <span className="text-zinc-500 text-xs tracking-wide uppercase">Salud</span>
           <span className="text-zinc-400 text-xs font-medium tabular-nums">{vidaGeneral}%</span>
