@@ -69,16 +69,18 @@ Botón `+` flotante (`z-index 50`) abajo derecha.
 
 ## Pendiente v2
 - [x] Rediseño completo de UI (zona personaje + lista compacta + bottom sheet)
-- [ ] Lógica `obtenerAsset(nombreTarea, vida)` en utils (reemplaza `obtenerImagen`)
-- [ ] Swipe para editar/eliminar tarjetas
+- [x] Swipe para editar/eliminar tarjetas
+- [x] `obtenerImagen(nombreTarea, vida)` en utils con mapa `PERSONAJES` (usa `/assets/tareas/<id>-<estado>.jpg`)
 - [ ] Onboarding de una sola vez explicando el swipe
 - [ ] GIFs del personaje (bloqueado esperando assets de Bianca)
 - [ ] GIFs específicos por tarea (bloqueado esperando definir tareas + assets)
+- [ ] Conectar `BannerUrgente` en App.jsx (componente implementado pero no usado)
 
 ## Arquitectura
 - **`App.jsx`** — orquesta estado de UI (`modalEstado`) y conecta el hook con los componentes. Calcula `vidaGeneral` (promedio) y ordena tareas por vida ascendente. Sin lógica de negocio.
 - **`hooks/useTareas.js`** — único punto de acceso a localStorage. Expone `{ tareas, completarTarea, eliminarTarea, editarTarea, agregarTarea }`. Todos los writes pasan por `actualizarTareas()` que sincroniza React state + localStorage en un solo lugar. Incluye seed de 3 tareas si localStorage está vacío.
-- **`utils/tareas.js`** — funciones puras: `calcularVida`, `diasDesde`, `colorBarra`, `esEmoji`, `obtenerImagen`. Ningún componente calcula vida directamente; todo pasa por aquí.
+- **`utils/tareas.js`** — funciones puras: `calcularVida`, `diasDesde`, `colorBarra`, `esEmoji`, `obtenerImagen`. La constante `PERSONAJES` mapea nombres canónicos de tarea (minúsculas) → identificador de personaje; `obtenerImagen` devuelve `/assets/tareas/<id>-<estado>.jpg` o `null` si la tarea no tiene asset propio. Ningún componente calcula vida directamente.
+- **`BannerUrgente.jsx`** — banner rojo que lista tareas con vida = 0. Implementado pero **no está conectado en App.jsx todavía**. Recibe `tareas` y `calcularVida`; se cierra con un botón (estado local, sin persistencia).
 - **`ZonaPersonaje.jsx`** — fondo fijo de toda la pantalla. Solo recibe `vidaGeneral`. Placeholder para GIFs de Bianca.
 - **`ZonaTareas.jsx`** — bottom sheet con drag gesture. **Patrón clave**: el `top` del panel NO está en el `style` prop de React — se gestiona 100% de forma imperativa vía `panelRef.current.style.top` en `useEffect`. Esto evita que los re-renders (al completar/agregar tareas) reseteen la posición del panel. Todo el estado del gesto vive en refs (`gesto`, `posicionRef`). `posicionRef.current`: `'libre'` | `'arriba'` (anclado en `15dvh`).
 - **`TarjetaTarea.jsx`** — tarjeta compacta de una fila. Flash verde de 600ms al completar (`completando` state). `stopPropagation` en botones de editar/eliminar para no disparar el complete.
