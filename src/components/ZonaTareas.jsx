@@ -153,16 +153,17 @@ export default function ZonaTareas({ tareas, onCompletar, onEliminar, onEditar }
     // para que re-renders (al completar/agregar tareas) no reseteen la posición del panel
     <div
       ref={panelRef}
-      className="fixed left-0 right-0 bottom-0 bg-zinc-900 overflow-y-auto"
+      className="fixed left-0 right-0 bottom-0 overflow-y-auto"
       style={{
         zIndex: 10,
         borderRadius: '24px 24px 0 0',
         willChange: 'transform, top',
         minHeight: '100%',
+        backgroundColor: 'rgba(0, 0, 0, 0.75)',
       }}
     >
       {/* Header sticky: permanece visible al hacer scroll en la lista */}
-      <div className="sticky top-0 bg-zinc-900 px-5 pt-5 pb-3 z-10">
+      <div className="sticky top-0 px-5 pt-5 pb-3 z-10" style={{ backgroundColor: 'rgba(0, 0, 0, 0.75)' }}>
         <h2 className="text-white font-semibold text-base tracking-tight">Tareas</h2>
       </div>
 
