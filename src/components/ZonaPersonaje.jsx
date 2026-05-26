@@ -20,6 +20,7 @@ export default function ZonaPersonaje({ vidaGeneral }) {
           width: '100%',
           height: '100%',
           objectFit: 'cover',
+          objectPosition: 'top',
           zIndex: 0,
         }}
       />
@@ -44,7 +45,7 @@ export default function ZonaPersonaje({ vidaGeneral }) {
         alt="Gato"
         style={{
           position: 'absolute',
-          top: '42%',
+          top: '32%',
           left: '50%',
           transform: 'translate(-50%, -50%)',
           maxWidth: '60%',
